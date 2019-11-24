@@ -81,42 +81,42 @@ function renderImage(drawing, paletteId) {
 }
 
 function imageDataFromImageSource(imageSource, pal, col) {
-	//console.log(imageSource);
+    var size = tilesize * scale;
+    var imageCanvas = document.createElement("canvas");
+    imageCanvas.width = size;
+    imageCanvas.height = size;
 
-	var img = context.createImageData(tilesize*scale,tilesize*scale);
+    var imageContext = imageCanvas.getContext("2d");
+	var imageData = imageContext.createImageData(size, size);
+    var pixels = new Uint32Array(imageData.data.buffer);
 
 	var backgroundColor = getPaletteColor(pal,0);
 	var foregroundColor = getPaletteColor(pal,col);
 
+    var foregroundPixel = foregroundColor.r <<  0 
+                        | foregroundColor.g <<  8
+                        | foregroundColor.b << 16
+                        | 255               << 24;
+    var backgroundPixel = backgroundColor.r <<  0 
+                        | backgroundColor.g <<  8
+                        | backgroundColor.b << 16
+                        | 255               << 24;
+
 	for (var y = 0; y < tilesize; y++) {
 		for (var x = 0; x < tilesize; x++) {
-			var px = imageSource[y][x];
+            var pixel = (imageSource[y][x] === 1) 
+                      ? foregroundPixel 
+                      : backgroundPixel; 
 			for (var sy = 0; sy < scale; sy++) {
 				for (var sx = 0; sx < scale; sx++) {
-					var pxl = (((y * scale) + sy) * tilesize * scale * 4) + (((x*scale) + sx) * 4);
-					if ( px === 1 ) {
-						img.data[pxl + 0] = foregroundColor.r;
-						img.data[pxl + 1] = foregroundColor.g;
-						img.data[pxl + 2] = foregroundColor.b;
-						img.data[pxl + 3] = 255;
-					}
-					else { //ch === 0
-						img.data[pxl + 0] = backgroundColor.r;
-						img.data[pxl + 1] = backgroundColor.g;
-						img.data[pxl + 2] = backgroundColor.b;
-						img.data[pxl + 3] = 255;
-					}
+					var pxl = ((y * scale) + sy) * tilesize * scale + ((x * scale) + sx);
+					pixels[pxl] = pixel;
 				}
 			}
 		}
 	}
 
-	// convert to canvas: chrome has poor performance when working directly with image data
-	var imageCanvas = document.createElement("canvas");
-	imageCanvas.width = img.width;
-	imageCanvas.height = img.height;
-	var imageContext = imageCanvas.getContext("2d");
-	imageContext.putImageData(img,0,0);
+	imageContext.putImageData(imageData, 0, 0);
 
 	return imageCanvas;
 }
